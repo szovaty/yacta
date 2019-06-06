@@ -1,0 +1,43 @@
+FROM ubuntu:16.04
+LABEL maintainer="charleshatt@imbio.com"
+
+ENV GCC=gcc
+ENV GPP=g++
+
+#### Install TOOLS ####
+RUN apt-get update
+RUN apt-get install -y apt-utils
+RUN apt-get install -y $GCC $GPP cmake
+RUN apt-get install -y libboost-all-dev 
+
+#### Create project ####
+ENV YACTA=/yacta
+RUN mkdir $YACTA
+WORKDIR $YACTA
+ADD imbio.yacta imbio.yacta
+
+#### Install VTK ####
+RUN apt-get install -y libglu1-mesa-dev freeglut3-dev mesa-common-dev
+RUN mkdir -p $YACTA/vtk
+ADD https://www.vtk.org/files/release/7.1/VTK-7.1.1.tar.gz vtk/download
+WORKDIR $YACTA/vtk
+RUN tar -zxf download
+RUN mkdir -p $YACTA/vtk/VTK-7.1.1/bin
+WORKDIR $YACTA/vtk/VTK-7.1.1/bin
+RUN cmake -DCMAKE_C_COMPILER=/usr/bin/$GCC -DCMAKE_CXX_COMPILER=/usr/bin/$GPP -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release ..
+
+#### Install ITK ####
+RUN mkdir $YACTA/itk
+WORKDIR $YACTA/itk
+ADD https://sourceforge.net/projects/itk/files/itk/4.10/InsightToolkit-4.10.1.tar.gz/download ./download
+RUN tar -zxf download
+RUN mkdir -p /yacta/itk/InsightToolkit-4.10.1/bin
+WORKDIR /yacta/itk/InsightToolkit-4.10.1/bin
+RUN cmake -DCMAKE_C_COMPILER=/usr/bin/$GCC -DCMAKE_CXX_COMPILER=/usr/bin/$GPP -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release ..
+
+#### Build yacta ####
+RUN sed -i "s\VTK REQUIRED\VTK REQUIRED PATHS /yacta/vtk/VTK-7.1.1/bin\g" $YACTA/imbio.yacta/src/CMakeLists.txt 
+RUN sed -i "s\ITK REQUIRED\ITK REQUIRED PATHS /yacta/itk/InsightToolkit-4.10.1/bin\g" $YACTA/imbio.yacta/src/CMakeLists.txt 
+WORKDIR /yacta/imbio.yacta/bin
+RUN cmake -DCMAKE_CXX_COMPILER=/usr/bin/$GPP -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++0x" -DCMAKE_C_FLAGS="-std=c++0x" ../src
+RUN make
