@@ -41,9 +41,8 @@ RUN cmake -DCMAKE_C_COMPILER=/usr/bin/$GCC -DCMAKE_CXX_COMPILER=/usr/bin/$GPP -D
 #### Install ITK ####
 RUN mkdir -p $ITK
 WORKDIR $ITK
-#ADD https://sourceforge.net/projects/itk/files/itk/$ITK_V/InsightToolkit-$ITK_F.tar.gz/download $ITK/download
-ADD InsightToolkit-4.10.1.tar.gz .
-#RUN tar -zxf 
+ADD https://sourceforge.net/projects/itk/files/itk/$ITK_V/InsightToolkit-$ITK_F.tar.gz/download $ITK
+RUN tar -zxf download
 RUN mkdir -p $ITK_BIN
 WORKDIR $ITK_BIN
 RUN cmake -DCMAKE_C_COMPILER=/usr/bin/$GCC -DCMAKE_CXX_COMPILER=/usr/bin/$GPP -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release ..
