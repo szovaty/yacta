@@ -1,26 +1,26 @@
-FROM ubuntu:16.04
-LABEL maintainer="charleshatt@imbio.com"i
+FROM ubuntu:18.04
+LABEL maintainer="charleshatt@imbio.com"
 
 # definitions
-ENV GCC=gcc
-ENV GPP=g++
+ENV TERM=/usr/bin/less
+ENV GCC=gcc-6
+ENV GPP=g++-6
 ENV YACTA=/yacta
 ENV IMBIO_YACTA=imbio.yacta
 ENV YACTA_BIN=$YACTA/$IMBIO_YACTA/bin
 ENV VTK=$YACTA/vtk
-#ENV VTK_V=7.1
-#ENV VTK_F=$VTK_V.1
-ENV VTK_V=8.2
-ENV VTK_F=$VTK_V.0
+ENV VTK_V=7.1
+ENV VTK_F=$VTK_V.1
 ENV VTK_BIN=$VTK/VTK-$VTK_F/bin
 ENV ITK=$YACTA/itk
 ENV ITK_V=4.10
 ENV ITK_F=$ITK_V.1
 ENV ITK_BIN=$ITK/InsightToolkit-$ITK_F/bin
-ENV PKG_LIST="apt-utils $GCC $GPP cmake libboost-all-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev"
+ENV PKG_LIST="apt-utils $GCC $GPP cmake libboost-all-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev less"
 
 #### Install TOOLS ####
-RUN apt-get update && apt-get install -y $PKG_LIST
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq $PKG_LIST 
+#libvtk7-dev
 
 #### Create project ####
 RUN mkdir $YACTA
@@ -39,18 +39,22 @@ RUN tar -zxf download
 RUN mkdir -p $VTK_BIN
 WORKDIR $VTK_BIN
 RUN cmake -DCMAKE_C_COMPILER=/usr/bin/$GCC -DCMAKE_CXX_COMPILER=/usr/bin/$GPP -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release ..
+RUN make install
 
 #### Install ITK ####
 RUN mkdir -p $ITK
 WORKDIR $ITK
+# source does not download sometime, using a local copy 
 ADD https://sourceforge.net/projects/itk/files/itk/$ITK_V/InsightToolkit-$ITK_F.tar.gz/download $ITK
+#COPY download download
 RUN tar -zxf download
 RUN mkdir -p $ITK_BIN
 WORKDIR $ITK_BIN
 RUN cmake -DCMAKE_C_COMPILER=/usr/bin/$GCC -DCMAKE_CXX_COMPILER=/usr/bin/$GPP -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release ..
+RUN make install
 
 #### Build yacta ####
-RUN sed -i "s\VTK REQUIRED\VTK REQUIRED PATHS $VTK_BIN\g" $YACTA/imbio.yacta/src/CMakeLists.txt 
+#RUN sed -i "s/VTK REQUIRED/VTK REQUIRED PATHS \/usr\/lib\/cmake\/vtk-7.1/g" $YACTA/imbio.yacta/src/CMakeLists.txt 
 RUN sed -i "s\ITK REQUIRED\ITK REQUIRED PATHS $ITK_BIN\g" $YACTA/imbio.yacta/src/CMakeLists.txt 
 WORKDIR $YACTA_BIN
 RUN cmake -DCMAKE_CXX_COMPILER=/usr/bin/$GPP -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++0x" -DCMAKE_C_FLAGS="-std=c++0x" ../src
