@@ -46,8 +46,8 @@ ENV ITK_BIN=$ITK/InsightToolkit-$ITK_F/bin
 RUN mkdir -p $ITK
 WORKDIR $ITK
 # using local copy when source does not download
-ADD https://sourceforge.net/projects/itk/files/itk/$ITK_V/InsightToolkit-$ITK_F.tar.gz/download $ITK
-#COPY download download
+#ADD https://sourceforge.net/projects/itk/files/itk/$ITK_V/InsightToolkit-$ITK_F.tar.gz/download $ITK
+COPY tmp/download download
 RUN tar -zxf download
 RUN mkdir -p $ITK_BIN
 WORKDIR $ITK_BIN
@@ -60,3 +60,5 @@ RUN sed -i "s\ITK REQUIRED\ITK REQUIRED PATHS $ITK_BIN\g" $YACTA/imbio.yacta/src
 WORKDIR $YACTA_BIN
 RUN cmake -DCMAKE_CXX_COMPILER=/usr/bin/$GPP -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++0x" -DCMAKE_C_FLAGS="-std=c++0x" ../src
 RUN make
+RUN echo $ITK/bin > /etc/ld.so.conf.d/itk
+RUN ldconfig
